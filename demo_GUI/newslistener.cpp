@@ -83,7 +83,7 @@ namespace NewsListener {
         setFuncOnData(Msg_SSEL2_Static, OnSubscribe_SSEL2_Static);
     }
 
-    QString TimeToStr(int time)
+    QString TimeToStr(long long time)
     {
         return QString::number(time);
 //        QString timeStr = QString::number(time);
@@ -97,16 +97,18 @@ namespace NewsListener {
     {
         QStringList dataList;
 
+        int delay = 0;
+
 		if (msgType == Msg_SSEL2_Static)
 		{
 			SSEL2_Static * realValue = (SSEL2_Static *)value;
-            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << TimeToStr(realValue->Time) << QString(realValue->Symbol)
+            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << QString(realValue->Symbol) << TimeToStr(realValue->Time)
                      << QString::number(realValue->SampleAvgPrice);
 		}
 		else if (msgType == Msg_SSEL2_Quotation)
 		{
 			SSEL2_Quotation * realValue = (SSEL2_Quotation *)value;
-            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << TimeToStr(realValue->Time) << QString(realValue->Symbol)
+            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << QString(realValue->Symbol) << TimeToStr(realValue->Time)
                      << QString::number(realValue->OpenPrice) << QString::number(realValue->HighPrice) << QString::number(realValue->LowPrice) << QString::number(realValue->LastPrice);
 		}
 		else if (msgType == Msg_SSEL2_Transaction)
@@ -118,19 +120,19 @@ namespace NewsListener {
         else if (msgType == Msg_SSEL2_Index)
         {
             SSEL2_Index * realValue = (SSEL2_Index *)value;
-            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << TimeToStr(realValue->Time) << QString(realValue->Symbol)
+            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << QString(realValue->Symbol) << TimeToStr(realValue->Time)
                      << QString::number(realValue->OpenPrice) << QString::number(realValue->HighPrice) << QString::number(realValue->LowPrice) << QString::number(realValue->LastPrice);
         }
 		else if (msgType == Msg_SSEL2_Auction)
 		{
 			SSEL2_Auction * realValue = (SSEL2_Auction *)value;
-            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << TimeToStr(realValue->Time) << QString(realValue->Symbol)
+            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << QString(realValue->Symbol) << TimeToStr(realValue->Time)
                      << QString::number(realValue->OpenPrice) << QString::number(realValue->AuctionVolume) << QString::number(realValue->LeaveVolume);
 		}
 		else if (msgType == Msg_SSEL2_Overview)
 		{
 			SSEL2_Overview * realValue = (SSEL2_Overview *)value;
-            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << TimeToStr(realValue->Time) << QString(realValue->Symbol)
+            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << QString(realValue->Symbol) << TimeToStr(realValue->Time)
                      << QString::number(realValue->TradeDate) << QString::number(realValue->MarketTime);
 		}
 		else if (msgType == Msg_SZSEL2_Static)
@@ -142,7 +144,7 @@ namespace NewsListener {
 		else if (msgType == Msg_SZSEL2_Quotation)
 		{
 			SZSEL2_Quotation * realValue = (SZSEL2_Quotation *)value;
-            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << TimeToStr(realValue->Time) << QString(realValue->Symbol)
+            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << QString(realValue->Symbol) << TimeToStr(realValue->Time)
                      << QString::number(realValue->OpenPrice) << QString::number(realValue->HighPrice) << QString::number(realValue->LowPrice) << QString::number(realValue->LastPrice);
 		}
 		else if (msgType == Msg_SZSEL2_Transaction)
@@ -154,22 +156,22 @@ namespace NewsListener {
 		else if (msgType == Msg_SZSEL2_Index)
 		{
 			SZSEL2_Index * realValue = (SZSEL2_Index *)value;
-            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << TimeToStr(realValue->Time) << QString(realValue->Symbol)
+            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << QString(realValue->Symbol) << TimeToStr(realValue->Time)
                      << QString::number(realValue->OpenPrice) << QString::number(realValue->HighPrice) << QString::number(realValue->LowPrice) << QString::number(realValue->LastPrice);
 		}
 		else if (msgType == Msg_SZSEL2_Order)
 		{
 			SZSEL2_Order * realValue = (SZSEL2_Order *)value;
-            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << QString::number(realValue->Time) << QString(realValue->Symbol)
+            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << QString(realValue->Symbol) << QString::number(realValue->Time)
                      << QString::number(realValue->OrderPrice) << QString::number(realValue->OrderVolume) << QString(realValue->OrderCode) << QString(realValue->OrderType);
 		}
 		else if (msgType == Msg_SZSEL2_Status)
 		{
 			SZSEL2_Status * realValue = (SZSEL2_Status *)value;
-            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << TimeToStr(realValue->Time) << QString(realValue->Symbol)
+            dataList << QString(QDSTimeToStr(realValue->QDSTime)) << QString(realValue->Symbol) << TimeToStr(realValue->Time)
                      << QString(realValue->FinancialStatus);
 		}
 
-		g_pMainWindow->onTableAddingNews(dataList);
+        g_pMainWindow->onTableAddingNews(msgType, dataList);
     }
 }

@@ -27,16 +27,19 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
     loginwindow.cpp \
-    newslistener.cpp
+    newslistener.cpp \
+    mdisubwindow.cpp
 
 HEADERS += \
         mainwindow.h \
     loginwindow.h \
-    newslistener.h
+    newslistener.h \
+    mdisubwindow.h
 
 FORMS += \
         mainwindow.ui \
-    loginwindow.ui
+    loginwindow.ui \
+    mdisubview.ui
 
 unix|win32: LIBS += -L$$PWD/SDK/lib/ -lwQDSApi
 

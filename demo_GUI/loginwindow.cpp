@@ -28,6 +28,7 @@ void LoginWindow::on_button_login_clicked()
     loginData.port = ui->lineEdit_port->text().toShort();
     loginData.publicKey = ui->lineEdit_publicKey->text();
     loginData.secretKey = ui->lineEdit_secretKey->text();
+    loginData.isWan = ui->checkBox_isWAN->isChecked();
 
     m_settings.setValue("demogui/ip", loginData.ip);
     m_settings.setValue("demogui/port", QString::number(loginData.port));

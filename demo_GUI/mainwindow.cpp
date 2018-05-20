@@ -6,6 +6,8 @@
 #include <QDebug>
 #include <QStringList>
 #include <QMutex>
+#include <QApplication>
+#include <QDesktopWidget>
 
 
 const static QList<int> exchangeEnum = {0x00102000, //上交所L2静态数据
@@ -22,18 +24,18 @@ const static QList<int> exchangeEnum = {0x00102000, //上交所L2静态数据
                                         0x00202007  //深交所L2证券状态
                                        };
 
-QMutex mutex;
-
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    m_pDataList = new QList<QStringList>();
-    m_pTableModel = NULL;
-    m_timer.setInterval(100);
-    m_timer.start();
-    connect(&m_timer, SIGNAL(timeout()) , this , SLOT(onTimeout()));
+	m_lastComboShowStyleIndex = 0;
+    MdiSubWindow *pMdiSubView = NULL;
+    for (int i = 0 ; i < exchangeEnum.count(); ++i)
+    {
+        m_mdiSubViewTable.insert((MsgType)exchangeEnum[i] , pMdiSubView);
+    }
+    ui->mdiArea->tileSubWindows();
 }
 
 MainWindow::~MainWindow()
@@ -41,73 +43,101 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_button_confirm_clicked()
+void MainWindow::on_button_subscribe_clicked()
 {
-    UnsubscribeAll();
-    const char* pCode = NULL;
-    QString codeText = ui->lineEdit_code->text();
-    if (!codeText.isEmpty())
-        pCode = codeText.toStdString().c_str();
+    QString codeText = "";
     int msgType = exchangeEnum[ui->combo_exchange->currentIndex()];
-    Subscribe((MsgType)msgType, (char *)pCode);
-    qDebug() << QString("Subscirbe---MsgType:") << QString::number(msgType) << QString("  Code:") << codeText;
-    QStringList headerList;
-    switch ((MsgType)msgType)
+	MdiSubWindow *pMdiSubView = m_mdiSubViewTable[(MsgType)msgType];
+	if (pMdiSubView != NULL)
+	{
+		needUnsubscribe((MsgType)msgType, NULL);
+
+        QList<QMdiSubWindow *> allSubWindows = ui->mdiArea->subWindowList();
+        for (int i = 0; i < allSubWindows.count(); ++i)
+        {
+            if (allSubWindows[i]->widget() == pMdiSubView)
+            {
+                ui->mdiArea->removeSubWindow(allSubWindows[i]);
+                break;
+            }
+        }
+        m_mdiSubViewTable[(MsgType)msgType] = NULL;
+	}
+    needSubscribe((MsgType)msgType, codeText);
+}
+
+
+void MainWindow::on_button_autoLayout_clicked()
+{
+    ui->mdiArea->tileSubWindows();
+}
+
+void MainWindow::on_comboBox_showStyle_currentIndexChanged(int index)
+{
+	
+	if (index != 2 && m_lastComboShowStyleIndex == 2)
+	{
+		ui->mdiArea->closeAllSubWindows();
+		for (auto iter = m_mdiSubViewTable.begin(); iter != m_mdiSubViewTable.end(); iter++)
+		{
+			MdiSubWindow *pSubWindow = iter.value();
+			if (pSubWindow != NULL)
+			{
+				pSubWindow->setParent(ui->mdiArea);
+				ui->mdiArea->addSubWindow(pSubWindow);
+				pSubWindow->show();
+			}
+		}
+	}
+
+    if (index == 0)
     {
-    case Msg_SSEL2_Static:
-        headerList << "QDSTime" << "Time" << "Symbol" << "SampleAvgPrice";
-        break;
-    case Msg_SSEL2_Quotation:
-        headerList << "QDSTime" << "Time" << "Symbol" << "OpenPrice" << "HighPrice" << "LowPrice" << "LastPrice";
-        break;
-    case Msg_SSEL2_Transaction:
-        headerList << "QDSTime" << "Symbol" << "TradePrice";
-        break;
-    case Msg_SSEL2_Auction:
-        headerList << "QDSTime" << "Time" << "Symbol" << "OpenPrice" << "AuctionVolume" << "LeaveVolume";
-        break;
-    case Msg_SSEL2_Index:
-        headerList << "QDSTime" << "Time" << "Symbol" << "OpenPrice" << "HighPrice" << "LowPrice" << "LastPrice";
-        break;
-    case Msg_SSEL2_Overview:
-        headerList << "QDSTime" << "Time" << "Symbol" << "TradeDate" << "TradeTime";
-        break;
-    case Msg_SZSEL2_Static:
-        headerList << "QDSTime" << "Symbol" << "IssuedVolume" << "OutstandingShare" << "LimitUpAbsoluteT" << "LimitDownAbsoluteT";
-        break;
-    case Msg_SZSEL2_Quotation:
-        headerList << "QDSTime" << "Time" << "Symbol" << "OpenPrice" << "HighPrice" << "LowPrice" << "LastPrice";
-        break;
-    case Msg_SZSEL2_Transaction:
-        headerList << "QDSTime" << "Symbol" << "TradeTime" << "TradePrice" << "TradeVolume" << "TradeType";
-        break;
-    case Msg_SZSEL2_Index:
-        headerList << "QDSTime" << "Time" << "Symbol" << "OpenPrice" << "HighPrice" << "LowPrice" << "LastPrice";
-        break;
-    case Msg_SZSEL2_Order:
-        headerList << "QDSTime" << "Time" << "Symbol" << "OrderPrice" << "OrderVolume" << "OrderCode" << "OrderType";
-        break;
-    case Msg_SZSEL2_Status:
-        headerList << "QDSTime" << "Time" << "Symbol" << "FinancialStatus";
-        break;
-
-    default:
-        break;
+        ui->mdiArea->setViewMode(QMdiArea::SubWindowView);
+        ui->button_autoLayout->show();
+        ui->button_autoStack->show();
+		ui->mdiArea->tileSubWindows();
     }
-
-    if (m_pTableModel != NULL)
+    else if (index == 1)
     {
-        QStandardItemModel *tmp = m_pTableModel;
-        m_pTableModel = NULL;
-        delete tmp;
+        ui->mdiArea->setViewMode(QMdiArea::TabbedView);
+        ui->button_autoLayout->hide();
+        ui->button_autoStack->hide();
+        ui->mdiArea->setTabsMovable(true);
+		QMdiSubWindow *pCurActiveSubWindow = ui->mdiArea->activeSubWindow();
+		if (pCurActiveSubWindow == NULL && ui->mdiArea->subWindowList().count() > 0)
+			pCurActiveSubWindow = ui->mdiArea->subWindowList().first();
+		if (pCurActiveSubWindow != NULL)
+			pCurActiveSubWindow->showMaximized();
     }
+    else
+    {
+        ui->button_autoLayout->hide();
+        ui->button_autoStack->hide();
+		if (m_lastComboShowStyleIndex != 2)
+		{
+			QList<QMdiSubWindow *> allSubWindows = ui->mdiArea->subWindowList();
+			int offsetX = 0;
+			int offsetY = 0;
+			for (int i = 0; i < allSubWindows.count(); i++)
+			{
+				QMdiSubWindow *pSubWindow = allSubWindows[i];
+				QWidget *pWidget = pSubWindow->widget();
+				if (pWidget != NULL)
+				{
+					pWidget->setParent(0);
+					pWidget->resize(400, 200);
+					pWidget->show();
+					pWidget->move((qApp->desktop()->width() - pWidget->width()) / 2 + offsetX, (qApp->desktop()->height() - pWidget->height()) / 2 + offsetY);
+					offsetX += 10;
+					offsetY += 15;
+					pSubWindow->setWidget(0);
+					ui->mdiArea->removeSubWindow(pSubWindow);
+				}
+			}
+		}
 
-    m_pDataList->clear();
-
-    m_pTableModel = new QStandardItemModel();
-    m_pTableModel->setColumnCount(headerList.count());
-    m_pTableModel->setHorizontalHeaderLabels(headerList);
-    ui->tableView->setModel(m_pTableModel);
+    }
+	m_lastComboShowStyleIndex = index;
 }
 
 void MainWindow::onLoginSucceed(LoginWindow::LoginData loginData)
@@ -122,29 +152,152 @@ void MainWindow::onLoginSucceed(LoginWindow::LoginData loginData)
     show();
 }
 
-void MainWindow::onTableAddingNews(QStringList news)
+void MainWindow::needSubscribe(MsgType msgType, QString codeStr)
 {
-    mutex.lock();
-    m_pDataList->append(news);
-    mutex.unlock();
-}
+    std::string tmpStr = codeStr.toStdString();
+    const char* pCode = tmpStr.c_str();
+    if (codeStr.isEmpty())
+        pCode = NULL;
 
-void MainWindow::onTimeout()
-{
-    if (m_pTableModel == NULL)
-        return;
-    for (int i = 0 ; i< m_pDataList->count(); ++i)
+    MdiSubWindow *pMdiSubView = m_mdiSubViewTable[(MsgType)msgType];
+	if (pMdiSubView != NULL)
+	{
+		Unsubscribe((MsgType)msgType, NULL);
+		pMdiSubView->close();
+	}
+
+    Subscribe((MsgType)msgType, (char *)pCode);
+    qDebug() << QString("Subscirbe---MsgType:") + QString::number(msgType) + QString("  Code:") + (pCode == NULL ? "NULL" : pCode);
+    QStringList headerList;
+    switch ((MsgType)msgType)
     {
-        m_pTableModel->insertRow(0);
-        for(int j = 0; j< (*m_pDataList)[i].count(); ++j)
-        {
-            m_pTableModel->setItem(0, j, new QStandardItem((*m_pDataList)[i][j]));
-        }
+    case Msg_SSEL2_Static:
+        headerList <<"索引" << "QDSTime" << "Symbol" << "Time" << "SampleAvgPrice";
+        break;
+    case Msg_SSEL2_Quotation:
+        headerList <<"索引" <<  "QDSTime" << "Symbol" << "Time"  << "OpenPrice" << "HighPrice" << "LowPrice" << "LastPrice";
+        break;
+    case Msg_SSEL2_Transaction:
+        headerList <<"索引" << "QDSTime" << "Symbol" << "TradePrice";
+        break;
+    case Msg_SSEL2_Auction:
+        headerList <<"索引" << "QDSTime" << "Symbol" << "Time" << "OpenPrice" << "AuctionVolume" << "LeaveVolume";
+        break;
+    case Msg_SSEL2_Index:
+        headerList <<"索引" << "QDSTime" << "Symbol" << "Time"<< "OpenPrice" << "HighPrice" << "LowPrice" << "LastPrice";
+        break;
+    case Msg_SSEL2_Overview:
+        headerList <<"索引" << "QDSTime" << "Symbol" << "Time"  << "TradeDate" << "TradeTime";
+        break;
+    case Msg_SZSEL2_Static:
+        headerList <<"索引" << "QDSTime" << "Symbol" << "IssuedVolume" << "OutstandingShare" << "LimitUpAbsoluteT" << "LimitDownAbsoluteT";
+        break;
+    case Msg_SZSEL2_Quotation:
+        headerList <<"索引" << "QDSTime" << "Symbol" << "Time"<< "OpenPrice" << "HighPrice" << "LowPrice" << "LastPrice";
+        break;
+    case Msg_SZSEL2_Transaction:
+        headerList <<"索引" << "QDSTime" << "Symbol" << "TradeTime" << "TradePrice" << "TradeVolume" << "TradeType";
+        break;
+    case Msg_SZSEL2_Index:
+        headerList <<"索引" << "QDSTime" << "Symbol" << "Time" << "OpenPrice" << "HighPrice" << "LowPrice" << "LastPrice";
+        break;
+    case Msg_SZSEL2_Order:
+        headerList <<"索引" << "QDSTime" << "Symbol" << "Time"  << "OrderPrice" << "OrderVolume" << "OrderCode" << "OrderType";
+        break;
+    case Msg_SZSEL2_Status:
+        headerList <<"索引" << "QDSTime" << "Symbol" << "Time"  << "FinancialStatus";
+        break;
+    default:
+        break;
     }
-    m_pDataList->clear();
-    if (m_pTableModel->rowCount() > 1000)
-        m_pTableModel->setRowCount(1000);
-    ui->tableView->repaint();
-    //qApp->processEvents();
+
+    pMdiSubView = new MdiSubWindow((MsgType)msgType , ui->mdiArea);
+    pMdiSubView->m_pTableModel = new QStandardItemModel();
+    pMdiSubView->m_pTableModel->setColumnCount(headerList.count());
+    pMdiSubView->m_pTableModel->setHorizontalHeaderLabels(headerList);
+    pMdiSubView->ui->tableView->setModel(pMdiSubView->m_pTableModel);
+    pMdiSubView->ui->tableView->setColumnWidth(0, 50);
+	pMdiSubView->ui->tableView->horizontalHeader()->setSectionsMovable(true);
+    pMdiSubView->m_mainWindow = this;
+	m_mdiSubViewTable[(MsgType)msgType] = pMdiSubView;
+
+
+	if (m_lastComboShowStyleIndex == 0)
+	{
+		ui->mdiArea->addSubWindow(pMdiSubView);
+		pMdiSubView->show();
+		ui->mdiArea->setViewMode(QMdiArea::SubWindowView);
+		ui->mdiArea->tileSubWindows();
+	}
+    else if (m_lastComboShowStyleIndex == 1)
+    {
+		ui->mdiArea->addSubWindow(pMdiSubView);
+		pMdiSubView->show();
+        ui->mdiArea->setViewMode(QMdiArea::TabbedView);
+        pMdiSubView->showMaximized();
+    }
+	else if (m_lastComboShowStyleIndex == 2)
+	{
+		pMdiSubView->setParent(0);
+		pMdiSubView->resize(400, 200);
+		pMdiSubView->show();
+		pMdiSubView->move((qApp->desktop()->width() - pMdiSubView->width()) / 2, (qApp->desktop()->height() - pMdiSubView->height()) / 2);
+	}
+
 }
 
+void MainWindow::needUnsubscribe(MsgType msgType, QString codeStr)
+{
+    std::string tmpStr = codeStr.toStdString();
+    const char* pCode = tmpStr.c_str();
+    if (codeStr.isEmpty())
+        pCode = NULL;
+    Unsubscribe((MsgType)msgType, (char *)pCode);
+    m_mdiSubViewTable[(MsgType)msgType] = NULL;
+}
+
+void MainWindow::onTableAddingNews(MsgType msgType, QStringList news)
+{
+	MdiSubWindow *pMdiSubView = m_mdiSubViewTable[msgType];
+	if (pMdiSubView != NULL)
+		pMdiSubView->onTableAddingNews(news);
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    UnsubscribeAll();
+	qApp->closeAllWindows();
+    event->accept();
+}
+
+void MainWindow::on_button_autoStack_clicked()
+{
+    ui->mdiArea->cascadeSubWindows();
+}
+
+void MainWindow::on_button_subscribeAll_clicked()
+{
+    for (int i = 0; i< exchangeEnum.count(); ++i)
+    {
+        QString codeText = "";
+        int msgType = exchangeEnum[i];
+        MdiSubWindow *pMdiSubView = m_mdiSubViewTable[(MsgType)msgType];
+        if (pMdiSubView != NULL)
+        {
+            needUnsubscribe((MsgType)msgType, NULL);
+
+            QList<QMdiSubWindow *> allSubWindows = ui->mdiArea->subWindowList();
+            for (int i = 0; i < allSubWindows.count(); ++i)
+            {
+                if (allSubWindows[i]->widget() == pMdiSubView)
+                {
+                    ui->mdiArea->removeSubWindow(allSubWindows[i]);
+                    break;
+                }
+            }
+            m_mdiSubViewTable[(MsgType)msgType] = NULL;
+        }
+        needSubscribe((MsgType)msgType, codeText);
+    }
+
+}

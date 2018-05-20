@@ -5,12 +5,16 @@
 #include <QList>
 #include <QStandardItemModel>
 #include <Qtimer>
+#include <QMap>
 #include "loginwindow.h"
 #include "newslistener.h"
+#include "mdisubwindow.h"
 
 namespace Ui {
 class MainWindow;
 }
+
+class MdiSubWindow;
 
 class MainWindow : public QMainWindow
 {
@@ -21,18 +25,26 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_button_confirm_clicked();
-    void onTimeout();
+    void on_button_subscribe_clicked();
+    void on_button_autoLayout_clicked();
+    void on_comboBox_showStyle_currentIndexChanged(int index);
+    void on_button_autoStack_clicked();
+
+    void on_button_subscribeAll_clicked();
 
 public slots:
     void onLoginSucceed(LoginWindow::LoginData);
-    void onTableAddingNews(QStringList);
+    void onTableAddingNews(MsgType MsgType ,QStringList);
+
+public:
+    QMap<MsgType,MdiSubWindow *> m_mdiSubViewTable;
+	int m_lastComboShowStyleIndex;
+    void needSubscribe(MsgType msgType, QString codeStr);
+    void needUnsubscribe(MsgType msgType, QString codeStr);
+    void closeEvent(QCloseEvent *event);
 
 private:
     Ui::MainWindow *ui;
-    QStandardItemModel* m_pTableModel;  //表格视图对应的模型数据
-    QList<QStringList>* m_pDataList;    //临时表格数据缓存，由于视图仅允许UI线程进行刷新，所以新接收的数据必须找个地方暂存起来，由UI线程来调用。
-    QTimer m_timer; //计时器，用于刷新界面
 };
 
 #endif // MAINWINDOW_H
