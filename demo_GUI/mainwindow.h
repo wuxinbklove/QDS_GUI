@@ -16,6 +16,8 @@ class MainWindow;
 
 class MdiSubWindow;
 
+
+//Ö÷´°¿Ú
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -23,6 +25,7 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+	QString m_delayLogPath;
 
 private slots:
     void on_button_subscribe_clicked();
@@ -33,8 +36,8 @@ private slots:
     void on_button_subscribeAll_clicked();
 
 public slots:
-    void onLoginSucceed(LoginWindow::LoginData);
-    void onTableAddingNews(MsgType MsgType ,QStringList);
+    void onLogin(LoginWindow::LoginData);
+    void onTableAddingNews(MsgType MsgType ,QStringList, int delay);
 
 public:
     QMap<MsgType,MdiSubWindow *> m_mdiSubViewTable;

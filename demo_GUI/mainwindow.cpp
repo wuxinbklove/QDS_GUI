@@ -8,27 +8,62 @@
 #include <QMutex>
 #include <QApplication>
 #include <QDesktopWidget>
+#include <QDateTime>
+#include <QDir>
+#include <QThread>
 
+static QMutex mutex;
 
 const static QList<int> exchangeEnum = {0x00102000, //上交所L2静态数据
-                                        0x00102001, //上交所L2实时行情
-                                        0x00102002, //上交所L2逐笔成交
-                                        0x00102003, //上交所L2指数行情
-                                        0x00102004, //上交所L2虚拟集合竞价
-                                        0x00102005, //上交所L2市场总览
-                                        0x00202000, //深交所L2静态数据
-                                        0x00202001, //深交所L2实时行情
-                                        0x00202002, //深交所L2逐笔成交
-                                        0x00202003, //深交所L2指数行情
-                                        0x00202006, //深交所L2逐笔委托
-                                        0x00202007  //深交所L2证券状态
-                                       };
+																	0x00102001, //上交所L2实时行情
+																	0x00102002, //上交所L2逐笔成交
+																	0x00102003, //上交所L2指数行情
+																	0x00102004, //上交所L2虚拟集合竞价
+																	0x00102005, //上交所L2市场总览
+																	0x00103000,  //上交所个股期权静态数据
+																	0x00103001,  //上交所个股期权实时行情
+																	0x00202000, //深交所L2静态数据
+																	0x00202001, //深交所L2实时行情
+																	0x00202002, //深交所L2逐笔成交
+																	0x00202003, //深交所L2指数行情
+																	0x00202006, //深交所L2逐笔委托
+																	0x00202007 //深交所L2证券状态
+																	};
+
+//登录线程
+class LoginThread : public  QThread
+{
+
+public:
+	LoginThread(LoginWindow::LoginData loginData ,QObject *parent = NULL);
+	RetCode getResult() { return m_result; }
+
+private:
+	LoginWindow::LoginData m_loginData;
+	RetCode m_result;
+
+protected:
+	void run();
+};
+
+LoginThread::LoginThread(LoginWindow::LoginData loginData, QObject *parent)
+{
+	m_loginData = loginData;
+}
+
+
+void LoginThread::run()
+{
+	m_result = Login(m_loginData.publicKey.toStdString().c_str(), m_loginData.secretKey.toStdString().c_str(), m_loginData.isWan);
+}
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    setWindowIcon(QIcon(":/logo.jpg"));
 	m_lastComboShowStyleIndex = 0;
     MdiSubWindow *pMdiSubView = NULL;
     for (int i = 0 ; i < exchangeEnum.count(); ++i)
@@ -36,6 +71,14 @@ MainWindow::MainWindow(QWidget *parent) :
         m_mdiSubViewTable.insert((MsgType)exchangeEnum[i] , pMdiSubView);
     }
     ui->mdiArea->tileSubWindows();
+
+	//创建日志文件夹（根据当前时间命名）
+	m_delayLogPath = qApp->applicationDirPath() + "/log/NewsDelay-" + QDateTime::currentDateTime().toString("yyyyMMdd-HHmmss/");
+	QDir dir;
+	if (!dir.exists(m_delayLogPath))
+	{
+		dir.mkpath(m_delayLogPath);
+	}
 }
 
 MainWindow::~MainWindow()
@@ -90,14 +133,14 @@ void MainWindow::on_comboBox_showStyle_currentIndexChanged(int index)
 		}
 	}
 
-    if (index == 0)
+    if (index == 0)		//MDI子窗口
     {
         ui->mdiArea->setViewMode(QMdiArea::SubWindowView);
         ui->button_autoLayout->show();
         ui->button_autoStack->show();
 		ui->mdiArea->tileSubWindows();
     }
-    else if (index == 1)
+    else if (index == 1)		//Tab标签页
     {
         ui->mdiArea->setViewMode(QMdiArea::TabbedView);
         ui->button_autoLayout->hide();
@@ -109,7 +152,7 @@ void MainWindow::on_comboBox_showStyle_currentIndexChanged(int index)
 		if (pCurActiveSubWindow != NULL)
 			pCurActiveSubWindow->showMaximized();
     }
-    else
+    else		//独立窗口
     {
         ui->button_autoLayout->hide();
         ui->button_autoStack->hide();
@@ -140,15 +183,35 @@ void MainWindow::on_comboBox_showStyle_currentIndexChanged(int index)
 	m_lastComboShowStyleIndex = index;
 }
 
-void MainWindow::onLoginSucceed(LoginWindow::LoginData loginData)
+void MainWindow::onLogin(LoginWindow::LoginData loginData)
 {
     CreateInstance();
     NewsListener::InitSubscribe(this);
-    RegisterService(loginData.ip.toStdString().c_str(), loginData.port);
-    RetCode ret = Login(loginData.publicKey.toStdString().c_str(), loginData.secretKey.toStdString().c_str(), loginData.isWan);
-    if (ret != Ret_Success)
-        QMessageBox::critical(this , "Error", "Login Error");
+    RegisterService(loginData.ip.toStdString().c_str(), loginData.port);        
+	LoginThread loginThread(loginData);
+	loginThread.start();
+	bool isThreadFinish = loginThread.wait(30000);
+	RetCode ret;
+	LoginWindow *pLoginWindow = (LoginWindow *)sender();
+	if (!isThreadFinish)	//如果isThreadFinish为false，则代表超时，界面程序强行终止登录线程
+	{
+		QMessageBox::critical(pLoginWindow, "Login", "Login OverTime!");
+		loginThread.terminate();
+		loginThread.wait();
+		return;
+	}
+	else
+	{
+		ret = loginThread.getResult();
+	}
+	if (ret != Ret_Success)
+	{
+		QMessageBox::critical(pLoginWindow, "Login", QString("Login Failed, RetCode = ") + QString::number((int)ret));
+		return;
+	}
     UnsubscribeAll();
+	if (pLoginWindow != NULL)
+		pLoginWindow->hide();
     show();
 }
 
@@ -168,75 +231,168 @@ void MainWindow::needSubscribe(MsgType msgType, QString codeStr)
 
     Subscribe((MsgType)msgType, (char *)pCode);
     qDebug() << QString("Subscirbe---MsgType:") + QString::number(msgType) + QString("  Code:") + (pCode == NULL ? "NULL" : pCode);
-    QStringList headerList;
+    QStringList headerList;	//表头项
     switch ((MsgType)msgType)
     {
     case Msg_SSEL2_Static:
-        headerList <<"索引" << "QDSTime" << "Symbol" << "Time" << "SampleAvgPrice";
+        headerList <<"索引" << "QDSTime" << "Symbol" << "Reserved" << "Time"
+			<< "ISINCode" << "SecurityName" << "SecurityEN" << "SymbolUnderlying" << "MarketType"
+			<< "CFICode" << "SecuritySubType" << "Currency" << "ParValue" << "TradableNo" 
+			<< "EndDate" << "ListingDate" << "SetNo" << "SetNo" << "BuyVolumeUnit" 
+			<< "SellVolumeUnit" << "DeclareVolumeFloor" << "DeclareVolumeCeiling" << "PreClosePrice"<< "TickSize" 
+			<< "UpDownLimitType" << "PriceUpLimit" << "PriceDownLimit" << "XRRatio" << "XDAmount" 
+			<< "CrdBuyUnderlying"<< "CrdSellUnderlying" << "SecurityStatus" << "SampleAvgPrice" << "TradeAmount" 
+			<< "AvgCapital" <<"TotalMarketValue"<< "MarketValueRatio" << "StaticPERatio" << "IndexLevelStatus";
         break;
     case Msg_SSEL2_Quotation:
-        headerList <<"索引" <<  "QDSTime" << "Symbol" << "Time"  << "OpenPrice" << "HighPrice" << "LowPrice" << "LastPrice";
-        break;
+		headerList << "索引" << "QDSTime" << "Symbol" << "Reserved" << "Time"
+			<< "PreClosePrice" << "OpenPrice" << "HighPrice" << "LowPrice" << "LastPrice"
+			<< "ClosePrice" << "TradeStatus" << "SecurityPhaseTag" << "TotalNo" << "TotalVolume"
+			<< "TotalAmount" << "TotalBuyOrderVolume" << "WtAvgBuyPrice" << "BondWtAvgBuyPrice" << "TotalSellOrderVolume"
+			<< "WtAvgSellPrice" << "BondWtAvgSellPrice" << "IOPV" << "ETFBuyNo" << "ETFBuyVolume"
+			<< "ETFBuyAmount" << "ETFSellNo" << "ETFSellVolume" << "ETFSellAmount" << "YTM"
+			<< "TotalWarrantExecVol" << "WarrantDownLimit" << "WarrantUpLimit" << "WithdrawBuyNo" << "WithdrawBuyVolume"
+			<< "WithdrawBuyAmount" << "WithdrawSellNo" << "WithdrawSellVolume" << "WithdrawSellAmount" << "TotalBuyNo"
+			<< "TotalSellNo" << "MaxBuyDuration" << "MaxSellDuration" << "BuyOrderNo" << "SellOrderNo"
+			<< "SellLevelNo" << "SellPrice01" << "SellVolume01" << "TotalSellOrderNo01" << "SellPrice02"
+			<< "SellVolume02" << "TotalSellOrderNo02" << "SellPrice03" << "SellVolume03" << "TotalSellOrderNo03"
+			<< "SellPrice04" << "SellVolume04" << "TotalSellOrderNo04" << "SellPrice05" << "SellVolume05"
+			<< "TotalSellOrderNo05" << "SellPrice06" << "SellVolume06" << "TotalSellOrderNo06" << "SellPrice07"
+			<< "SellVolume07" << "TotalSellOrderNo07" << "SellPrice08" << "SellVolume08" << "TotalSellOrderNo08"
+			<< "SellPrice09" << "SellVolume09" << "TotalSellOrderNo09" << "SellPrice10" << "SellVolume10"
+			<< "TotalSellOrderNo10" << "SellLevelQueueNo01" << "SellLevelQueue" << "BuyLevelNo" << "BuyPrice01"
+			<< "BuyVolume01" << "TotalBuyOrderNo01" << "BuyPrice02" << "BuyVolume02" << "TotalBuyOrderNo02"
+			<< "BuyPrice03" << "BuyVolume03" << "TotalBuyOrderNo03" << "BuyPrice04" << "BuyVolume04"
+			<< "TotalBuyOrderNo04" << "BuyPrice05" << "BuyVolume05" << "TotalBuyOrderNo05" << "BuyPrice06"
+			<< "BuyVolume06" << "TotalBuyOrderNo06" << "BuyPrice07" << "BuyVolume07" << "TotalBuyOrderNo07"
+			<< "BuyPrice08" << "BuyVolume08" << "TotalBuyOrderNo08" << "BuyPrice09" << "BuyVolume09"
+			<< "TotalBuyOrderNo09" << "BuyPrice10" << "BuyVolume10" << "TotalBuyOrderNo10" << "BuyLevelQueueNo01" 
+			<< "BuyLevelQueue";
+       break;
     case Msg_SSEL2_Transaction:
-        headerList <<"索引" << "QDSTime" << "Symbol" << "TradePrice";
+        headerList <<"索引" << "QDSTime" << "Symbol" << "Reserved" << "TradeTime" 
+			<< "RecID" << "TradeChannel" << "TradePrice" << "TradeVolume" << "TradeAmount"
+			<< "BuyRecID" << "SellRecID" << "BuySellFlag";
         break;
     case Msg_SSEL2_Auction:
-        headerList <<"索引" << "QDSTime" << "Symbol" << "Time" << "OpenPrice" << "AuctionVolume" << "LeaveVolume";
+        headerList <<"索引" << "QDSTime" << "Symbol" << "Reserved" <<"Time" 
+			<< "OpenPrice" << "AuctionVolume" << "LeaveVolume" << "side";
         break;
     case Msg_SSEL2_Index:
-        headerList <<"索引" << "QDSTime" << "Symbol" << "Time"<< "OpenPrice" << "HighPrice" << "LowPrice" << "LastPrice";
+        headerList <<"索引" << "QDSTime" << "Symbol" << "Reserved" << "Time"
+			<< "TradeTime" << "PreClosePrice"<<"OpenPrice" << "TotalAmount" << "HighPrice" 
+			<< "LowPrice" << "LastPrice" << "TotalVolume" << "ClosePrice";
         break;
     case Msg_SSEL2_Overview:
-        headerList <<"索引" << "QDSTime" << "Symbol" << "Time"  << "TradeDate" << "TradeTime";
+        headerList <<"索引" << "QDSTime" << "Symbol" << "Reserved" << "Time" 
+			<< "MarketTime" << "TradeDate";
         break;
+	case Msg_SSEIOL1_Static:
+		headerList << "索引" << "QDSTime" << "Symbol" << "Reserved" << "ContractID"
+			<< "SecurityName" << "SymbolUnderlying" << "NameUnderlying" << "UnderlyingType" << "OptionType"
+			<< "CallOrPut" << "ContractMultiplierUnit" << "ExercisePrice" << "StartDate" << "EndDate"
+			<< "ExerciseDate" << "DeliveryDate" << "ExpireDate" << "Version" << "TotalLongPosition"
+			<< "PreClosePrice" << "PreSettlePrice" << "PreClosePriceUnderlying" << "UpDownLimitType" << "PriceUpLimit"
+			<< "PriceDownLimit" << "MarginUnit" << "MarginRatioParam1" << "MarginRatioParam2" << "RoundLot"
+			<< "LmtOrdFloor" << "LmtOrdCeiling" << "MktOrdFloor" << "MktOrdCeiling" << "TickSize"
+			<< "SecurityStatusFlag" << "AutoSplitDate";
+		break;
+	case Msg_SSEIOL1_Quotation:
+		headerList << "索引" << "QDSTime" << "Symbol" << "Reserved" << "Time"
+			<< "PreSettlePrice" << "SettlePrice" << "OpenPrice" << "HighPrice" << "LowPrice"
+			<< "LastPrice" << "ClosePrice" << "AuctionPrice" << "AuctionVolume" << "TotalPosition"
+			<< "SellLevelNo" << "SellPrice01" << "SellVolume01" << "SellPrice02" << "SellVolume02"
+			<< "SellPrice03" << "SellVolume03" << "SellPrice04" << "SellVolume04" << "SellPrice05"
+			<< "SellVolume05" << "BuyLevelNo" << "BuyPrice01" << "BuyVolume01" << "BuyPrice02"
+			<< "BuyVolume02" << "BuyPrice03" << "BuyVolume03" << "BuyPrice04" << "BuyVolume04"
+			<< "BuyPrice05" << "BuyVolume05" << "TotalVolume" << "TotalAmount" << "SecurityPhaseTag";
+		break;
     case Msg_SZSEL2_Static:
-        headerList <<"索引" << "QDSTime" << "Symbol" << "IssuedVolume" << "OutstandingShare" << "LimitUpAbsoluteT" << "LimitDownAbsoluteT";
+		headerList << "索引" << "QDSTime" << "Symbol" << "SecurityName" << "SymbolSource"
+			<< "SecurityEN" << "ISINCode" << "SymbolUnderlying" << "UnderlyingSecurityIDSource" << "SecurityType"
+			<< "SecurityStatusTag" << "PreClosePrice" << "ListingDate" << "Currency" << "ParValue"
+			<< "IssuedVolume" << "OutstandingShare" << "IndustryType" << "PreYearEPS" << "YearEPS"
+			<< "OfferingFlag" << "NAV" << "CouponRate" << "IssuePrice" << "Interest"
+			<< "InterestAccrualDate" << "MaturityDate" << "ConversionPrice" << "ConversionRatio" << "ConversionBeginDate"
+			<< "ConversionEndDate" << "CallOrPut" << "WarrantClearingType" << "ClearingPrice" << "OptionType"
+			<< "EndDate" << "ExpirationDays" << "DayTrading" << "GageFlag" << "GageRate"
+			<< "CrdBuyUnderlying" << "CrdSellUnderlying" << "CrdPriceCheckType" << "PledgeFlag" << "ContractMultiplier"
+			<< "RegularShare" << "QualificationFlag" << "MarketMakerFlag" << "RoundLot" << "TickSize"
+			<< "BuyQtyUpperLimit" << "SellQtyUpperLimit" << "BuyVolumeUnit" << "SellVolumeUnit" << "LimitUpRateO"
+			<< "LimitDownRateO" << "LimitUpAbsoluteO" << "LimitDownAbsoluteO" << "AuctionUpDownRateO" << "AuctionUpDownAbsoluteO"
+			<< "LimitUpRateT" << "LimitDownRateT" << "LimitUpAbsoluteT" << "LimitDownAbsoluteT" << "AuctionUpDownRateT"
+			<< "AuctionUpDownAbsoluteT" << "LimitUpRateC" << "LimitDownRateC" << "LimitUpAbsoluteC" << "LimitDownAbsoluteC"
+			<< "AuctionUpDownRateC" << "AuctionUpDownAbsoluteC";
         break;
     case Msg_SZSEL2_Quotation:
-        headerList <<"索引" << "QDSTime" << "Symbol" << "Time"<< "OpenPrice" << "HighPrice" << "LowPrice" << "LastPrice";
+        headerList <<"索引" << "QDSTime" << "Symbol" << "Time"<< "SymbolSource"
+			<< "PreClosePrice" << "OpenPrice" << "LastPrice" << "HighPrice" << "LowPrice" 
+			<< "PriceUpLimit" << "PriceDownLimit" << "PriceUpdown1" << "PriceUpdown2" << "TotalNo"
+			<< "TotalVolume" << "TotalAmount" << "ClosePrice" << "SecurityPhaseTag" << "PERatio1"
+			<< "NAV" << "PERatio2" << "IOPV" << "PremiumRate" << "TotalSellOrderVolume"
+			<< "WtAvgSellPrice" << "SellLevelNo" << "SellPrice01" << "SellVolume01" << "TotalSellOrderNo01"
+			<< "SellPrice02" << "SellVolume02" << "TotalSellOrderNo02" << "SellPrice03" << "SellVolume03"
+			<< "TotalSellOrderNo03" << "SellPrice04" << "SellVolume04" << "TotalSellOrderNo04" << "SellPrice05"
+			<< "SellVolume05" << "TotalSellOrderNo05" << "SellPrice06" << "SellVolume06" << "TotalSellOrderNo06"
+			<< "SellPrice07" << "SellVolume07" << "TotalSellOrderNo07" << "SellPrice08" << "SellVolume08"
+			<< "TotalSellOrderNo08" << "SellPrice09" << "SellVolume09" << "TotalSellOrderNo09" << "SellPrice10"
+			<< "SellVolume10" << "TotalSellOrderNo10" << "SellLevelQueueNo01" << "SellLevelQueue" << "TotalBuyOrderVolume"
+			<< "WtAvgBuyPrice" << "BuyLevelNo" << "BuyPrice01" << "BuyVolume01" << "TotalBuyOrderNo01"
+			<< "BuyPrice02" << "BuyVolume02" << "TotalBuyOrderNo02" << "BuyPrice03" << "BuyVolume03"
+			<< "TotalBuyOrderNo03" << "BuyPrice04" << "BuyVolume04" << "TotalBuyOrderNo04" << "BuyPrice05"
+			<< "BuyVolume05" << "TotalBuyOrderNo05" << "BuyPrice06" << "BuyVolume06" << "TotalBuyOrderNo06"
+			<< "BuyPrice07" << "BuyVolume07" << "TotalBuyOrderNo07" << "BuyPrice08" << "BuyVolume08"
+			<< "TotalBuyOrderNo08" << "BuyPrice09" << "BuyVolume09" << "TotalBuyOrderNo09" << "BuyPrice10"
+			<< "BuyVolume10" << "TotalBuyOrderNo10" << "BuyLevelQueueNo01" << "BuyLevelQueue";
         break;
     case Msg_SZSEL2_Transaction:
-        headerList <<"索引" << "QDSTime" << "Symbol" << "TradeTime" << "TradePrice" << "TradeVolume" << "TradeType";
+        headerList <<"索引" << "QDSTime" << "Symbol" << "SetID" << "RecID"
+			<< "BuyOrderID" << "SellOrderID" << "SymbolSource" <<"TradeTime" << "TradePrice" 
+			<< "TradeVolume" << "TradeType";
         break;
     case Msg_SZSEL2_Index:
-        headerList <<"索引" << "QDSTime" << "Symbol" << "Time" << "OpenPrice" << "HighPrice" << "LowPrice" << "LastPrice";
+        headerList <<"索引" << "QDSTime" << "Symbol" << "Time" << "SymbolSource"
+			<< "PreClosePrice" << "OpenPrice" << "HighPrice" << "LowPrice" << "LastPrice"
+			<< "TotalAmount" << "TotalNo" << "TotalVolume" << "SecurityPhaseTag" << "SampleNo";		
         break;
     case Msg_SZSEL2_Order:
-        headerList <<"索引" << "QDSTime" << "Symbol" << "Time"  << "OrderPrice" << "OrderVolume" << "OrderCode" << "OrderType";
+        headerList <<"索引" << "QDSTime" << "Symbol" << "SetID" << "RecID" 
+			<< "SymbolSource" << "Time"  << "OrderPrice" << "OrderVolume" << "OrderCode" 
+			<< "OrderType";
         break;
     case Msg_SZSEL2_Status:
-        headerList <<"索引" << "QDSTime" << "Symbol" << "Time"  << "FinancialStatus";
+        headerList <<"索引" << "QDSTime" << "Symbol" << "SymbolSource" << "Time" 
+			<< "FinancialStatus" << "CrdBuyStatus" << "CrdSellStatus" << "SubscribeStatus" << "RedemptionStatus"
+			<< "PurchasingStatus" << "StockDiviStatus" << "PutableStatus" << "ExerciseStatus" << "GoldPurchase"
+			<< "GoldRedemption" << "AcceptedStatus" << "ReleaseStatus" << "CancStockDiviStatus" << "CancPutableStatus"
+			<< "PledgeStatus" << "RemovePledge" << "VoteStatus" << "StockPledgeRepo" << "DivideStatus"
+			<< "MergerStatus";
         break;
+
     default:
         break;
     }
 
     pMdiSubView = new MdiSubWindow((MsgType)msgType , ui->mdiArea);
-    pMdiSubView->m_pTableModel = new QStandardItemModel();
-    pMdiSubView->m_pTableModel->setColumnCount(headerList.count());
-    pMdiSubView->m_pTableModel->setHorizontalHeaderLabels(headerList);
-    pMdiSubView->ui->tableView->setModel(pMdiSubView->m_pTableModel);
-    pMdiSubView->ui->tableView->setColumnWidth(0, 50);
-	pMdiSubView->ui->tableView->horizontalHeader()->setSectionsMovable(true);
-    pMdiSubView->m_mainWindow = this;
+	pMdiSubView->initTable(this, headerList);
 	m_mdiSubViewTable[(MsgType)msgType] = pMdiSubView;
 
 
-	if (m_lastComboShowStyleIndex == 0)
+	if (m_lastComboShowStyleIndex == 0)	//MDI子窗口显示
 	{
 		ui->mdiArea->addSubWindow(pMdiSubView);
 		pMdiSubView->show();
 		ui->mdiArea->setViewMode(QMdiArea::SubWindowView);
 		ui->mdiArea->tileSubWindows();
 	}
-    else if (m_lastComboShowStyleIndex == 1)
+    else if (m_lastComboShowStyleIndex == 1)	//Tab标签页显示
     {
 		ui->mdiArea->addSubWindow(pMdiSubView);
 		pMdiSubView->show();
         ui->mdiArea->setViewMode(QMdiArea::TabbedView);
         pMdiSubView->showMaximized();
     }
-	else if (m_lastComboShowStyleIndex == 2)
+	else if (m_lastComboShowStyleIndex == 2)	//独立窗口显示
 	{
 		pMdiSubView->setParent(0);
 		pMdiSubView->resize(400, 200);
@@ -256,11 +412,13 @@ void MainWindow::needUnsubscribe(MsgType msgType, QString codeStr)
     m_mdiSubViewTable[(MsgType)msgType] = NULL;
 }
 
-void MainWindow::onTableAddingNews(MsgType msgType, QStringList news)
+void MainWindow::onTableAddingNews(MsgType msgType, QStringList news, int delay)
 {
+	mutex.lock();
 	MdiSubWindow *pMdiSubView = m_mdiSubViewTable[msgType];
 	if (pMdiSubView != NULL)
-		pMdiSubView->onTableAddingNews(news);
+		pMdiSubView->onTableAddingNews(news, delay);
+	mutex.unlock();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -298,6 +456,9 @@ void MainWindow::on_button_subscribeAll_clicked()
             m_mdiSubViewTable[(MsgType)msgType] = NULL;
         }
         needSubscribe((MsgType)msgType, codeText);
+
+		if (i == 5)
+			i = i + 2;	//跳过上股期权的两个
     }
 
 }

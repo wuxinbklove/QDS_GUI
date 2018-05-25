@@ -144,6 +144,16 @@
             </item>
             <item>
              <property name="text">
+              <string>上交所个股期权静态数据</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>上交所个股期权实时行情</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
               <string>深交所L2静态数据</string>
              </property>
             </item>
@@ -416,7 +426,7 @@
 color:red;</string>
          </property>
          <property name="text">
-          <string>说明：1). 可调整表格列宽或者次序，以显示你所关心的内容; 2)为降低性能要求，每种类型仅呈现最近3000条数据。</string>
+          <string>说明：1). 可调整表格列宽或者次序，以显示你所关心的内容; 2)为降低性能要求，每种类型仅呈现最近2000条数据。</string>
          </property>
          <property name="scaledContents">
           <bool>false</bool>

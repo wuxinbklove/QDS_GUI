@@ -8,6 +8,7 @@ namespace Ui {
 class LoginWindow;
 }
 
+//µÇÂ¼´°¿Ú
 class LoginWindow : public QMainWindow
 {
     Q_OBJECT

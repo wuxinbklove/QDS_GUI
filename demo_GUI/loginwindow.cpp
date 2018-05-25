@@ -8,12 +8,13 @@ LoginWindow::LoginWindow(QWidget *parent) :
     m_settings(qApp->applicationDirPath() + "/config/guiconfig.ini",QSettings::IniFormat)
 {
     ui->setupUi(this);
+    setWindowIcon(QIcon(":/logo.jpg"));
     setWindowFlags(Qt::MSWindowsFixedSizeDialogHint | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
-    ui->lineEdit_ip->setText(m_settings.value("demogui/ip").toString());
-    ui->lineEdit_port->setText(m_settings.value("demogui/port").toString());
-    ui->lineEdit_publicKey->setText(m_settings.value("demogui/publicKey").toString());
-    ui->lineEdit_secretKey->setText(m_settings.value("demogui/secretKey").toString());
-    ui->checkBox_isWAN->setChecked(m_settings.value("demogui/isWAN").toBool());
+    ui->lineEdit_ip->setText(m_settings.value("login/ip").toString());
+    ui->lineEdit_port->setText(m_settings.value("login/port").toString());
+    ui->lineEdit_publicKey->setText(m_settings.value("login/publicKey").toString());
+    ui->lineEdit_secretKey->setText(m_settings.value("login/secretKey").toString());
+    ui->checkBox_isWAN->setChecked(m_settings.value("login/isWAN").toBool());
 }
 
 LoginWindow::~LoginWindow()
@@ -30,12 +31,11 @@ void LoginWindow::on_button_login_clicked()
     loginData.secretKey = ui->lineEdit_secretKey->text();
     loginData.isWan = ui->checkBox_isWAN->isChecked();
 
-    m_settings.setValue("demogui/ip", loginData.ip);
-    m_settings.setValue("demogui/port", QString::number(loginData.port));
-    m_settings.setValue("demogui/publicKey", loginData.publicKey);
-    m_settings.setValue("demogui/secretKey", loginData.secretKey);
-    m_settings.setValue("demogui/isWAN", loginData.isWan);
+    m_settings.setValue("login/ip", loginData.ip);
+    m_settings.setValue("login/port", QString::number(loginData.port));
+    m_settings.setValue("login/publicKey", loginData.publicKey);
+    m_settings.setValue("login/secretKey", loginData.secretKey);
+    m_settings.setValue("login/isWAN", loginData.isWan);
 
     emit loginSucceed(loginData);
-    hide();
 }

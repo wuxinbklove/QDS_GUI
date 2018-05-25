@@ -28,13 +28,15 @@ SOURCES += \
         mainwindow.cpp \
     loginwindow.cpp \
     newslistener.cpp \
-    mdisubwindow.cpp
+    mdisubwindow.cpp \
+    qselectcombo.cpp
 
 HEADERS += \
         mainwindow.h \
     loginwindow.h \
     newslistener.h \
-    mdisubwindow.h
+    mdisubwindow.h \
+    qselectcombo.h
 
 FORMS += \
         mainwindow.ui \
@@ -45,3 +47,6 @@ unix|win32: LIBS += -L$$PWD/SDK/lib/ -lwQDSApi
 
 INCLUDEPATH += $$PWD/SDK/include
 DEPENDPATH += $$PWD/SDK/include
+
+RESOURCES += \
+    resources.qrc

@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     loginWindow.show();
 
     MainWindow mainWindow;
-    QObject::connect(&loginWindow, SIGNAL(loginSucceed(LoginWindow::LoginData)), &mainWindow, SLOT(onLoginSucceed(LoginWindow::LoginData)));
+    QObject::connect(&loginWindow, SIGNAL(loginSucceed(LoginWindow::LoginData)), &mainWindow, SLOT(onLogin(LoginWindow::LoginData)));
 
     return a.exec();
 }
