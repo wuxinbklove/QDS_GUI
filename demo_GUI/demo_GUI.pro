@@ -45,6 +45,8 @@ FORMS += \
 
 unix|win32: LIBS += -L$$PWD/SDK/lib/ -lwQDSApi
 
+win32: RC_ICONS = icon.ico
+
 INCLUDEPATH += $$PWD/SDK/include
 DEPENDPATH += $$PWD/SDK/include
 
