@@ -8,7 +8,7 @@ LoginWindow::LoginWindow(QWidget *parent) :
     m_settings(qApp->applicationDirPath() + "/config/guiconfig.ini",QSettings::IniFormat)
 {
     ui->setupUi(this);
-    setWindowIcon(QIcon(":/logo.jpg"));
+    setWindowIcon(QIcon(":/icon.png"));
     setWindowFlags(Qt::MSWindowsFixedSizeDialogHint | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
     ui->lineEdit_ip->setText(m_settings.value("login/ip").toString());
     ui->lineEdit_port->setText(m_settings.value("login/port").toString());

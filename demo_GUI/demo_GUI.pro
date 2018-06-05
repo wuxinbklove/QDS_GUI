@@ -8,8 +8,10 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = demo_GUI
+TARGET = QDS_GUI
 TEMPLATE = app
+
+VERSION = 1.5.0
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which has been marked as deprecated (the exact warnings
@@ -45,7 +47,7 @@ FORMS += \
 
 unix|win32: LIBS += -L$$PWD/SDK/lib/ -lwQDSApi
 
-win32: RC_ICONS = icon.ico
+win32: RC_FILE = product.rc
 
 INCLUDEPATH += $$PWD/SDK/include
 DEPENDPATH += $$PWD/SDK/include

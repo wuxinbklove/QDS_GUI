@@ -46,7 +46,7 @@ protected:
 	void run();
 };
 
-LoginThread::LoginThread(LoginWindow::LoginData loginData, QObject *parent)
+LoginThread::LoginThread(LoginWindow::LoginData loginData, QObject *)
 {
 	m_loginData = loginData;
 }
@@ -63,7 +63,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    setWindowIcon(QIcon(":/logo.jpg"));
+    setWindowIcon(QIcon(":/icon.png"));
 	m_lastComboShowStyleIndex = 0;
     MdiSubWindow *pMdiSubView = NULL;
     for (int i = 0 ; i < exchangeEnum.count(); ++i)
