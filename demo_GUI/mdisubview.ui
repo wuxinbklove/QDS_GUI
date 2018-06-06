@@ -189,6 +189,12 @@
    <header location="global">qselectcombo.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>lineEdit_symbol</tabstop>
+  <tabstop>combo_selectColumn</tabstop>
+  <tabstop>button_symbol</tabstop>
+  <tabstop>tableView</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

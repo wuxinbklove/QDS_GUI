@@ -145,6 +145,7 @@
   <tabstop>lineEdit_port</tabstop>
   <tabstop>lineEdit_publicKey</tabstop>
   <tabstop>lineEdit_secretKey</tabstop>
+  <tabstop>checkBox_isWAN</tabstop>
   <tabstop>button_login</tabstop>
  </tabstops>
  <resources/>
