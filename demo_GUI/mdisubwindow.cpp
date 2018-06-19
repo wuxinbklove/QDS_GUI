@@ -26,6 +26,8 @@ MdiSubWindow::MdiSubWindow(MsgType msgType, QWidget *parent) :
     m_timer.setInterval(100);
     m_timer.start();
 	m_lastCalcDelay = INT_MAX;
+    m_maxShowCount = m_settings.value("maxshowcount/maxshowcount", 2000).toInt();
+    qDebug() << "maxShowCount:" << m_maxShowCount;
     connect(&m_timer, SIGNAL(timeout()) , this , SLOT(onTimeout()));
 	switch (msgType)
 	{
@@ -209,11 +211,11 @@ void MdiSubWindow::onTimeout()
     }
 	m_pTableData->append(*m_pDataList);
     m_pDataList->clear();
-    if (m_pTableModel->rowCount() > MAXTABLEROWCOUNT)
-        m_pTableModel->setRowCount(MAXTABLEROWCOUNT);
-	if (m_pTableData->count() > MAXTABLEROWCOUNT)
+    if (m_pTableModel->rowCount() > m_maxShowCount)
+        m_pTableModel->setRowCount(m_maxShowCount);
+    if (m_pTableData->count() > m_maxShowCount)
 	{
-		m_pTableData->erase(m_pTableData->begin(), m_pTableData->begin() + m_pTableData->count() - MAXTABLEROWCOUNT);
+        m_pTableData->erase(m_pTableData->begin(), m_pTableData->begin() + m_pTableData->count() - m_maxShowCount);
 	}
 	mutex.unlock();
 }

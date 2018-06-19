@@ -18,9 +18,6 @@ class MdiSubWindow;
 
 class MainWindow;
 
-#define MAXTABLEROWCOUNT 2000
-
-
 //MDI子窗口
 class MdiSubWindow : public QWidget
 {
@@ -39,6 +36,7 @@ public:
 private:
     MsgType m_msgType;		//订阅类型
     WorkState m_workState;		//当前工作状态，界面表格处于刷新还是暂停刷新
+    int m_maxShowCount;
 
     MainWindow *m_mainWindow;
 	Ui::MdiSubWindow *ui;
