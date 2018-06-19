@@ -167,7 +167,7 @@ namespace NewsListener {
 				<< QString::number(realValue->EndDate) << QString::number(realValue->ListingDate) << QString::number(realValue->SetNo)<< QString::number(realValue->BuyVolumeUnit) << QString::number(realValue->SellVolumeUnit) 
 				<< QString::number(realValue->DeclareVolumeFloor) << QString::number(realValue->DeclareVolumeCeiling) << QString::number(realValue->PreClosePrice, 'f', 2) << QString::number(realValue->TickSize, 'f', 2) << QString(realValue->UpDownLimitType)
 				<< QString::number(realValue->PriceUpLimit, 'f', 2) << QString::number(realValue->PriceDownLimit, 'f', 2) << QString::number(realValue->XRRatio, 'f', 2) << QString::number(realValue->XDAmount, 'f', 2) << QString(realValue->CrdBuyUnderlying)
-				<< QString(realValue->CrdSellUnderlying) << QString(realValue->SecurityStatus) << QString::number(realValue->SampleNo) << QString::number(realValue->SampleAvgPrice, 'f', 2)  << QString::number(realValue->TradeAmount, 'f', 2)
+                << QString(realValue->CrdBuyUnderlying) << QString(realValue->SecurityStatus) << QString::number(realValue->SampleNo) << QString::number(realValue->SampleAvgPrice, 'f', 2)  << QString::number(realValue->TradeAmount, 'f', 2)
 				<< QString::number(realValue->AvgCapital, 'f', 2) << QString::number(realValue->TotalMarketValue, 'f', 2) << QString::number(realValue->MarketValueRatio, 'f', 2) << QString::number(realValue->StaticPERatio, 'f', 2)  << QString(realValue->IndexLevelStatus);
 			delay = CalcDelay(msgType, QString(QDSTimeToStr(realValue->QDSTime)), QString::number(realValue->Time));
 		}

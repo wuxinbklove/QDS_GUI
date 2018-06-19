@@ -238,11 +238,11 @@ void MainWindow::needSubscribe(MsgType msgType, QString codeStr)
         headerList <<"索引" << "QDSTime" << "Symbol" << "Reserved" << "Time"
 			<< "ISINCode" << "SecurityName" << "SecurityEN" << "SymbolUnderlying" << "MarketType"
 			<< "CFICode" << "SecuritySubType" << "Currency" << "ParValue" << "TradableNo" 
-			<< "EndDate" << "ListingDate" << "SetNo" << "SetNo" << "BuyVolumeUnit" 
-			<< "SellVolumeUnit" << "DeclareVolumeFloor" << "DeclareVolumeCeiling" << "PreClosePrice"<< "TickSize" 
-			<< "UpDownLimitType" << "PriceUpLimit" << "PriceDownLimit" << "XRRatio" << "XDAmount" 
-			<< "CrdBuyUnderlying"<< "CrdSellUnderlying" << "SecurityStatus" << "SampleAvgPrice" << "TradeAmount" 
-			<< "AvgCapital" <<"TotalMarketValue"<< "MarketValueRatio" << "StaticPERatio" << "IndexLevelStatus";
+            << "EndDate" << "ListingDate" << "SetNo"  << "BuyVolumeUnit" << "SellVolumeUnit"
+            << "DeclareVolumeFloor" << "DeclareVolumeCeiling" << "PreClosePrice"<< "TickSize" << "UpDownLimitType"
+            << "PriceUpLimit" << "PriceDownLimit" << "XRRatio" << "XDAmount" << "CrdBuyUnderlying"
+            << "CrdSellUnderlying" << "SecurityStatus" << "SampleNo" << "SampleAvgPrice" << "TradeAmount"
+            << "AvgCapital" <<"TotalMarketValue" << "MarketValueRatio" << "StaticPERatio" << "IndexLevelStatus";
         break;
     case Msg_SSEL2_Quotation:
 		headerList << "索引" << "QDSTime" << "Symbol" << "Reserved" << "Time"
