@@ -168,7 +168,8 @@ namespace NewsListener {
 				<< QString::number(realValue->DeclareVolumeFloor) << QString::number(realValue->DeclareVolumeCeiling) << QString::number(realValue->PreClosePrice, 'f', 2) << QString::number(realValue->TickSize, 'f', 2) << QString(realValue->UpDownLimitType)
 				<< QString::number(realValue->PriceUpLimit, 'f', 2) << QString::number(realValue->PriceDownLimit, 'f', 2) << QString::number(realValue->XRRatio, 'f', 2) << QString::number(realValue->XDAmount, 'f', 2) << QString(realValue->CrdBuyUnderlying)
                 << QString(realValue->CrdBuyUnderlying) << QString(realValue->SecurityStatus) << QString::number(realValue->SampleNo) << QString::number(realValue->SampleAvgPrice, 'f', 2)  << QString::number(realValue->TradeAmount, 'f', 2)
-				<< QString::number(realValue->AvgCapital, 'f', 2) << QString::number(realValue->TotalMarketValue, 'f', 2) << QString::number(realValue->MarketValueRatio, 'f', 2) << QString::number(realValue->StaticPERatio, 'f', 2)  << QString(realValue->IndexLevelStatus);
+                << QString::number(realValue->AvgCapital, 'f', 2) << QString::number(realValue->TotalMarketValue, 'f', 2) << QString::number(realValue->MarketValueRatio, 'f', 2) << QString::number(realValue->StaticPERatio, 'f', 2)  << QString(realValue->IndexLevelStatus)
+                << QString::number(realValue->TradeDate);
 			delay = CalcDelay(msgType, QString(QDSTimeToStr(realValue->QDSTime)), QString::number(realValue->Time));
 		}
 		else if (msgType == Msg_SSEL2_Quotation)
@@ -239,7 +240,7 @@ namespace NewsListener {
 				<< QString::number(realValue->PreClosePrice, 'f', 2) << QString::number(realValue->PreSettlePrice, 'f', 2) << QString::number(realValue->PreClosePriceUnderlying, 'f', 2) << QString(realValue->UpDownLimitType) << QString::number(realValue->PriceUpLimit, 'f', 2)
 				<< QString::number(realValue->PriceDownLimit, 'f', 2) << QString::number(realValue->MarginUnit, 'f', 2) << QString::number(realValue->MarginRatioParam1, 'f', 2) << QString::number(realValue->MarginRatioParam2, 'f', 2) << QString::number(realValue->RoundLot)
 				<< QString::number(realValue->LmtOrdFloor) << QString::number(realValue->LmtOrdCeiling) << QString::number(realValue->MktOrdFloor) << QString::number(realValue->MktOrdCeiling) << QString::number(realValue->TickSize, 'f', 2)
-				<< QString(realValue->SecurityStatusFlag) << QString::number(realValue->AutoSplitDate);
+                << QString(realValue->SecurityStatusFlag) << QString::number(realValue->AutoSplitDate) << QString::number(realValue->TradeDate);
 		
 		}
 		else if (msgType == Msg_SSEIOL1_Quotation)
@@ -252,7 +253,7 @@ namespace NewsListener {
 				<< QString::number(realValue->SellPrice03, 'f', 2) << QString::number(realValue->SellVolume03) << QString::number(realValue->SellPrice04, 'f', 2) << QString::number(realValue->SellVolume04) << QString::number(realValue->SellPrice05, 'f', 2)
 				<< QString::number(realValue->SellVolume05) << QString::number(realValue->BuyLevelNo) << QString::number(realValue->BuyPrice01, 'f', 2) << QString::number(realValue->BuyVolume01) << QString::number(realValue->BuyPrice02, 'f', 2)
 				<< QString::number(realValue->BuyVolume02) << QString::number(realValue->BuyPrice03, 'f', 2) << QString::number(realValue->BuyVolume03) << QString::number(realValue->BuyPrice04, 'f', 2) << QString::number(realValue->BuyVolume04)
-				<< QString::number(realValue->BuyPrice05, 'f', 2) << QString::number(realValue->BuyVolume05) << QString::number(realValue->TotalVolume) << QString::number(realValue->TotalAmount, 'f', 2) << QByteArray(realValue->SecurityPhaseTag, 4);
+                << QString::number(realValue->BuyPrice05, 'f', 2) << QString::number(realValue->BuyVolume05) << QString::number(realValue->TotalVolume) << QString::number(realValue->TotalAmount, 'f', 2) << QByteArray(realValue->SecurityPhaseTag, 4);
 		}
 		else if (msgType == Msg_SZSEL2_Static)
 		{
@@ -271,7 +272,7 @@ namespace NewsListener {
 				<< QString::number(realValue->LimitDownRateO, 'f', 2) << QString::number(realValue->LimitUpAbsoluteO, 'f', 2) << QString::number(realValue->LimitDownAbsoluteO, 'f', 2) << QString::number(realValue->AuctionUpDownRateO, 'f', 2) << QString::number(realValue->AuctionUpDownAbsoluteO, 'f', 2)
 				<< QString::number(realValue->LimitUpRateT, 'f', 2) << QString::number(realValue->LimitDownRateT, 'f', 2) << QString::number(realValue->LimitUpAbsoluteT, 'f', 2) << QString::number(realValue->LimitDownAbsoluteT, 'f', 2) << QString::number(realValue->AuctionUpDownRateT, 'f', 2)
 				<< QString::number(realValue->AuctionUpDownAbsoluteT, 'f', 2) << QString::number(realValue->LimitUpRateC, 'f', 2) << QString::number(realValue->LimitDownRateC, 'f', 2) << QString::number(realValue->LimitUpAbsoluteC, 'f', 2) << QString::number(realValue->LimitDownAbsoluteC, 'f', 2)
-				<< QString::number(realValue->AuctionUpDownRateC, 'f', 2) << QString::number(realValue->AuctionUpDownAbsoluteC, 'f', 2);
+                << QString::number(realValue->AuctionUpDownRateC, 'f', 2) << QString::number(realValue->AuctionUpDownAbsoluteC, 'f', 2) << QString::number(realValue->TradeDate) << QString(realValue->QualificationClass);
 		}
 		else if (msgType == Msg_SZSEL2_Quotation)
 		{
@@ -294,7 +295,8 @@ namespace NewsListener {
 				<< QString::number(realValue->BuyVolume05, 'f', 2) << QString::number(realValue->TotalBuyOrderNo05) << QString::number(realValue->BuyPrice06, 'f', 2) << QString::number(realValue->BuyVolume06, 'f', 2) << QString::number(realValue->TotalBuyOrderNo06)
 				<< QString::number(realValue->BuyPrice07, 'f', 2) << QString::number(realValue->BuyVolume07, 'f', 2) << QString::number(realValue->TotalBuyOrderNo07) << QString::number(realValue->BuyPrice08, 'f', 2) << QString::number(realValue->BuyVolume08, 'f', 2)
 				<< QString::number(realValue->TotalBuyOrderNo08) << QString::number(realValue->BuyPrice09, 'f', 2) << QString::number(realValue->BuyVolume09, 'f', 2) << QString::number(realValue->TotalBuyOrderNo09) << QString::number(realValue->BuyPrice10, 'f', 2)
-				<< QString::number(realValue->BuyVolume10, 'f', 2) << QString::number(realValue->TotalBuyOrderNo10) << QString::number(realValue->BuyLevelQueueNo01) << DoubleArrToString(realValue->BuyLevelQueue, 50);
+                << QString::number(realValue->BuyVolume10, 'f', 2) << QString::number(realValue->TotalBuyOrderNo10) << QString::number(realValue->BuyLevelQueueNo01) << DoubleArrToString(realValue->BuyLevelQueue, 50) << QString::number(realValue->WtAvgRate, 'f', 2)
+                << QString::number(realValue->WtAvgRateUpdown, 'f', 2) << QString::number(realValue->PreWtAvgRate, 'f', 2);
 			delay = CalcDelay(msgType, QString(QDSTimeToStr(realValue->QDSTime)), QString::number(realValue->Time));
 		}
 		else if (msgType == Msg_SZSEL2_Transaction)

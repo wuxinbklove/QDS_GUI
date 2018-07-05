@@ -15,6 +15,14 @@ LoginWindow::LoginWindow(QWidget *parent) :
     ui->lineEdit_publicKey->setText(m_settings.value("login/publicKey").toString());
     ui->lineEdit_secretKey->setText(m_settings.value("login/secretKey").toString());
     ui->checkBox_isWAN->setChecked(m_settings.value("login/isWAN").toBool());
+
+	connect(ui->button_getKey, &QPushButton::clicked, [=]() {
+		ui->stackedWidget->setCurrentIndex(1);
+	});
+
+	connect(ui->button_returnLogin, &QPushButton::clicked, [=]() {
+		ui->stackedWidget->setCurrentIndex(0);
+	});
 }
 
 LoginWindow::~LoginWindow()

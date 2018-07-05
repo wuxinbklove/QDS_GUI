@@ -26,9 +26,9 @@ public:
         QString secretKey;
         bool isWan;
     }LoginData;
+	Ui::LoginWindow *ui;
 
 private:
-    Ui::LoginWindow *ui;
     QSettings m_settings;
 
 signals:

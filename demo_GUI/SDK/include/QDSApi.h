@@ -36,8 +36,13 @@ typedef int bool;
 const bool true=1;
 const bool false=0;
 
+#if 0
 typedef enum RetCode RetCode;
 typedef enum MsgType MsgType;
+#else
+typedef int RetCode;
+typedef int MsgType;
+#endif
 #endif
 
 #ifdef __cplusplus
@@ -50,8 +55,13 @@ QDS_API_EXPORT void CreateInstance();
  警告：请勿在回调函数接口内执行耗时操作，如：复杂运算，写文件等；否则会堵塞数据的接收。
  建议处理方式：把接收到的数据放至队列，再由工作线程处理接收到的数据内容；
  */
-typedef void (*funcOnData)(const void* pData);
-QDS_API_EXPORT void setFuncOnData(int msgType, funcOnData func);
+#if 1
+	typedef void * pOnData_t;
+#else
+	typedef char * pOnData_t;
+#endif
+typedef void (*funcOnData)(const void * pData);
+QDS_API_EXPORT void setFuncOnData(MsgType msgType, funcOnData func);
 	
 QDS_API_EXPORT const char * QDSTimeToStr(unsigned long long us);
 	
