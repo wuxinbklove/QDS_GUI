@@ -12,6 +12,7 @@
 #include <QDir>
 #include <QThread>
 #include <QTimer>
+#include <QProcess>
 #include "ui_loginwindow.h"
 
 static QMutex mutex;
@@ -40,11 +41,11 @@ public:
 	LoginThread(LoginWindow::LoginData loginData ,QObject *parent = NULL);
 	RetCode getResult() { return m_result; }
 	~LoginThread();
+	QTimer timer;
 
 private:
 	LoginWindow::LoginData m_loginData;
 	RetCode m_result;
-	QTimer timer;
 
 protected:
 	void run();
@@ -61,8 +62,6 @@ LoginThread::LoginThread(LoginWindow::LoginData loginData, QObject *)
 
 LoginThread::~LoginThread()
 {
-	if (timer.isActive())
-		timer.stop();
 }
 
 void LoginThread::run()
@@ -215,6 +214,8 @@ void MainWindow::onLogin(LoginWindow::LoginData loginData)
 	loginLoop.exec();
 	pLoginWindow->setEnabled(true);
 	pLoginWindow->ui->button_getKey->setStyleSheet("color:blue;border:none;");
+	if (loginThread.timer.isActive())
+		loginThread.timer.stop();
 	RetCode ret = loginThread.getResult();
 	if (ret != Ret_Success)
 	{
@@ -440,7 +441,10 @@ void MainWindow::closeEvent(QCloseEvent *event)
 {
     UnsubscribeAll();
 	qApp->closeAllWindows();
-    event->accept();
+	qApp->quit();
+	QProcess::execute("taskkill", QStringList() << "/im" << "QDS_GUI*" << "/f");
+	//qApp->quit();
+	//event->ignore();
 }
 
 void MainWindow::on_button_autoStack_clicked()
